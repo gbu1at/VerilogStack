@@ -28,14 +28,46 @@ endmodule
 module d_trigger (
     input wire d,
     input wire sync,
-    output wire q,
-    output wire neg_q
+    output wire q
 );
     wire not_d;
     
     not(not_d, d);
 
+    wire neg_q;
+
     sync_rs_trigger sync_inst (.r(not_d), .sync(sync), .s(d), .q(q), .neg_q(neg_q));
+
+endmodule
+
+module d_2_bits_trigger (
+    input wire reset,
+    input wire sync,
+    input wire [1:0] d,
+    output wire [1:0] q
+);
+    
+    wire new_sync;
+    
+    or(new_sync, reset, sync);
+
+    wire not_reset;
+    not(not_reset, reset);
+
+    wire [1:0] extend_reset;
+    
+    assign extend_reset = {not_reset, not_reset};
+
+    wire [1:0] new_d;
+
+    and(new_d[0], d[0], extend_reset[0]);
+    and(new_d[1], d[1], extend_reset[1]);
+
+
+    d_trigger d0 (.d(new_d[0]), .sync(new_sync), .q(q[0]));
+    
+    d_trigger d1 (.d(new_d[1]), .sync(new_sync), .q(q[1]));
+
 endmodule
 
 module d_4_bits_trigger (
@@ -58,15 +90,20 @@ module d_4_bits_trigger (
 
     wire [3:0] new_d;
     // and(new_d, extend_reset, d);
-    assign new_d = d & extend_reset;
+    and(new_d[0], d[0], extend_reset[0]);
+    and(new_d[1], d[1], extend_reset[1]);
+    and(new_d[2], d[2], extend_reset[2]);
+    and(new_d[3], d[3], extend_reset[3]);
 
-    d_trigger d0 (.d(new_d[0]), .sync(new_sync), .q(q[0]), .neg_q());
-    
-    d_trigger d1 (.d(new_d[1]), .sync(new_sync), .q(q[1]), .neg_q());
-    
-    d_trigger d2 (.d(new_d[2]), .sync(new_sync), .q(q[2]), .neg_q());
 
-    d_trigger d3 (.d(new_d[3]), .sync(new_sync), .q(q[3]), .neg_q());
+    d_trigger d0 (.d(new_d[0]), .sync(new_sync), .q(q[0]));
+    
+    d_trigger d1 (.d(new_d[1]), .sync(new_sync), .q(q[1]));
+    
+    d_trigger d2 (.d(new_d[2]), .sync(new_sync), .q(q[2]));
+
+    d_trigger d3 (.d(new_d[3]), .sync(new_sync), .q(q[3]));
+
 endmodule
 
 
@@ -77,14 +114,14 @@ module d_3_bits_trigger (
     output wire [2:0] q
 );
     wire [3:0] extend_q;
-    wire [3:0] extend_d = {d[0], d[1], d[2], 1'b0};
+    wire [3:0] extend_d = {1'b0, d[2], d[1], d[0]};
     d_4_bits_trigger trigger (
         .reset(reset),
         .sync(sync),
         .d(extend_d),
         .q(extend_q)
     );
-    assign q = {extend_q[0], extend_q[1], extend_q[2]};
+    assign q[2:0] = {extend_q[2], extend_q[1], extend_q[0]};
 
 endmodule
 
@@ -235,28 +272,31 @@ endmodule
 
 module mod5 (
     input wire [3:0] a,   // 4-битный вход
-    output reg [2:0] q    // 3-битный выход
+    output wire [2:0] q    // 3-битный выход
 );
-    always @(*) begin
-        case (a)
-            4'b0000: q = 3'b000; // 0 % 5 = 0
-            4'b0001: q = 3'b001; // 1 % 5 = 1
-            4'b0010: q = 3'b010; // 2 % 5 = 2
-            4'b0011: q = 3'b011; // 3 % 5 = 3
-            4'b0100: q = 3'b100; // 4 % 5 = 4
-            4'b0101: q = 3'b000; // 5 % 5 = 0
-            4'b0110: q = 3'b001; // 6 % 5 = 1
-            4'b0111: q = 3'b010; // 7 % 5 = 2
-            4'b1000: q = 3'b011; // 8 % 5 = 3
-            4'b1001: q = 3'b100; // 9 % 5 = 4
-            4'b1010: q = 3'b000; // 5 % 5 = 0
-            4'b1011: q = 3'b001; // 6 % 5 = 1
-            4'b1100: q = 3'b010; // 7 % 5 = 2
-            4'b1101: q = 3'b011; // 8 % 5 = 3
-            4'b1110: q = 3'b100; // 9 % 5 = 4
-            4'b1111: q = 3'b000; // 9 % 5 = 0
-        endcase
-    end
+    // always @(*) begin
+    //     case (a)
+    //         4'b0000: q = 3'b000; // 0 % 5 = 0
+    //         4'b0001: q = 3'b001; // 1 % 5 = 1
+    //         4'b0010: q = 3'b010; // 2 % 5 = 2
+    //         4'b0011: q = 3'b011; // 3 % 5 = 3
+    //         4'b0100: q = 3'b100; // 4 % 5 = 4
+    //         4'b0101: q = 3'b000; // 5 % 5 = 0
+    //         4'b0110: q = 3'b001; // 6 % 5 = 1
+    //         4'b0111: q = 3'b010; // 7 % 5 = 2
+    //         4'b1000: q = 3'b011; // 8 % 5 = 3
+    //         4'b1001: q = 3'b100; // 9 % 5 = 4
+    //         4'b1010: q = 3'b000; // 5 % 5 = 0
+    //         4'b1011: q = 3'b001; // 6 % 5 = 1
+    //         4'b1100: q = 3'b010; // 7 % 5 = 2
+    //         4'b1101: q = 3'b011; // 8 % 5 = 3
+    //         4'b1110: q = 3'b100; // 9 % 5 = 4
+    //         4'b1111: q = 3'b000; // 9 % 5 = 0
+    //     endcase
+    // end
+
+    assign q = {a[2], a[1], a[0]};
+    
 
 endmodule
 
@@ -274,15 +314,19 @@ module next_index (
 
     or(or_c0_c1, c0, c1);
 
-    wire [3:0] extend_sync = {sync, sync, sync, sync};
-    wire [3:0] cmd_val = 4'b0000;
+    wire [3:0] cmd_val;
 
     and(cmd_val[0], or_c0_c1, c0);
     and(cmd_val[2], or_c0_c1, c1);
 
+    assign cmd_val[1] = 1'b0;
+    assign cmd_val[3] = 1'b0;
+
     wire [3:0] S;
-    // and(S, extend_sync, cmd_val);
-    assign S = extend_sync & cmd_val;
+    and(S[0], sync, cmd_val[0]);
+    and(S[1], sync, cmd_val[1]);
+    and(S[2], sync, cmd_val[2]);
+    and(S[3], sync, cmd_val[3]);
 
     wire [2:0] S_mod_5;
     mod5 m1 (
@@ -313,7 +357,7 @@ module next_index (
         .a(sum),
         .q(next_idx)
     );
-    
+
 endmodule
 
 
@@ -357,7 +401,8 @@ module current_index (
     );
 
     assign q = next_idx;
-    
+
+
 endmodule
 
 
@@ -377,20 +422,27 @@ module memory (
     output wire [3:0] q
 );
 
-    wire SYNC;
     wire c0 = cmd[0];
     wire c1 = cmd[1];
 
     wire not_c1;
-
     not(not_c1, c1);
 
     wire X;
-
     and(X, not_c1, c0);
+    
+    wire SYNC;
     and(SYNC, X, sync);
 
-    wire [7:0] sync_extend = {SYNC, SYNC, SYNC, SYNC, SYNC, SYNC, SYNC, SYNC};
+    wire [7:0] sync_extend;
+    assign sync_extend[0] = SYNC;
+    assign sync_extend[1] = SYNC;
+    assign sync_extend[2] = SYNC;
+    assign sync_extend[3] = SYNC;
+    assign sync_extend[4] = SYNC;
+    assign sync_extend[5] = SYNC;
+    assign sync_extend[6] = SYNC;
+    assign sync_extend[7] = SYNC;
 
     wire [7:0] idx_dec_8;
 
@@ -400,8 +452,15 @@ module memory (
     );
 
     wire [7:0] data_sync;
-    // and(data_sync, sync_extend, idx_dec_8);
-    assign data_sync = sync_extend & idx_dec_8;
+
+    and(data_sync[0], sync_extend[0], idx_dec_8[0]);
+    and(data_sync[1], sync_extend[1], idx_dec_8[1]);
+    and(data_sync[2], sync_extend[2], idx_dec_8[2]);
+    and(data_sync[3], sync_extend[3], idx_dec_8[3]);
+    and(data_sync[4], sync_extend[4], idx_dec_8[4]);
+    and(data_sync[5], sync_extend[5], idx_dec_8[5]);
+    and(data_sync[6], sync_extend[6], idx_dec_8[6]);
+    and(data_sync[7], sync_extend[7], idx_dec_8[7]);
 
 
     wire [3:0] data_0;
@@ -410,55 +469,38 @@ module memory (
         .reset(reset),
         .sync(data_sync[0]),
         .d(data),
-        .q(data_0)
+        .q(q0)
     );
 
-
-    wire [3:0] data_1;
 
     d_4_bits_trigger trigger1 (
         .reset(reset),
         .sync(data_sync[1]),
         .d(data),
-        .q(data_1)
+        .q(q1)
     );
 
-
-    wire [3:0] data_2;
 
     d_4_bits_trigger trigger2 (
         .reset(reset),
         .sync(data_sync[2]),
         .d(data),
-        .q(data_2)
+        .q(q2)
     );
-
-
-    wire [3:0] data_3;
 
     d_4_bits_trigger trigger3 (
         .reset(reset),
         .sync(data_sync[3]),
         .d(data),
-        .q(data_3)
+        .q(q3)
     );
-
-
-    wire [3:0] data_4;
 
     d_4_bits_trigger trigger4 (
         .reset(reset),
         .sync(data_sync[4]),
         .d(data),
-        .q(data_4)
+        .q(q4)
     );
-
-
-    assign q0 = data_0;
-    assign q1 = data_1;
-    assign q2 = data_2;
-    assign q3 = data_3;
-    assign q4 = data_4;
 
     wire [3:0] extend_idx_0 = {idx_dec_8[0], idx_dec_8[0], idx_dec_8[0], idx_dec_8[0]};
     wire [3:0] extend_idx_1 = {idx_dec_8[1], idx_dec_8[1], idx_dec_8[1], idx_dec_8[1]};
@@ -466,15 +508,15 @@ module memory (
     wire [3:0] extend_idx_3 = {idx_dec_8[3], idx_dec_8[3], idx_dec_8[3], idx_dec_8[3]};
     wire [3:0] extend_idx_4 = {idx_dec_8[4], idx_dec_8[4], idx_dec_8[4], idx_dec_8[4]};
 
-    wire Q0; and(Q0, data_0, extend_idx_0);
-    wire Q1; and(Q1, data_1, extend_idx_1);
-    wire Q2; and(Q2, data_2, extend_idx_2);
-    wire Q3; and(Q3, data_3, extend_idx_3);
-    wire Q4; and(Q4, data_4, extend_idx_4);
+    wire Q0; and(Q0, q0, extend_idx_0);
+    wire Q1; and(Q1, q1, extend_idx_1);
+    wire Q2; and(Q2, q2, extend_idx_2);
+    wire Q3; and(Q3, q3, extend_idx_3);
+    wire Q4; and(Q4, q4, extend_idx_4);
 
-    // or(q, Q0, Q1, Q2, Q3, Q4);
     assign q = Q0 | Q1 | Q2 | Q3 | Q4;
-    
+
+
 endmodule
 
 module shift_index (
@@ -530,24 +572,6 @@ module shift_index (
     
 endmodule
 
-module slow (
-    input wire a,
-    output wire q
-);
-    wire a0, a1, a2, a3, a4, a5, a6, a7, a8;
-    not(a0, a);
-    not(a1, a0);
-    not(a2, a1);
-    not(a3, a2);
-    not(a4, a3);
-    not(a5, a4);
-    not(a6, a5);
-    not(a7, a6);
-    not(a8, a7);
-    not(q, a8);
-
-endmodule
-
 
 module my_stack (
     input wire reset,
@@ -563,10 +587,28 @@ module my_stack (
     output wire [3:0] d
 );
 
-    wire [2:0] idx;
-    current_index curr_idx(
+    wire [3:0] slow_data;
+
+    d_4_bits_trigger d_4_trigger (
         .reset(reset),
-        .cmd(cmd),
+        .sync(sync),
+        .d(data),
+        .q(slow_data)
+    );
+
+    wire [1:0] slow_cmd;
+
+    d_2_bits_trigger d_2_trigger (
+        .reset(reset),
+        .sync(sync),
+        .d(cmd),
+        .q(slow_cmd)
+    );
+
+    wire [2:0] idx;
+    current_index curr_idx (
+        .reset(reset),
+        .cmd(slow_cmd),
         .sync(sync),
         .q(idx)
     );
@@ -590,29 +632,24 @@ module my_stack (
         .q(idx_to_mem)
     );
 
-    wire slow_sync;
-
-    slow slow_s(
-        .a(sync),
-        .q(slow_s)
-    );
+    wire not_sync;
+    not(not_sync, sync);
 
     memory mem(
         .reset(reset),
-        .sync(slow_sync),
+        .sync(not_sync),
         .cmd(cmd),
         .index(idx_to_mem),
-        .data(data),
-        .q0(d0),
-        .q1(d1),
-        .q2(d2),
-        .q3(d3),
-        .q4(d4),
+        .data(slow_data),
+        .q0(d4),
+        .q1(d0),
+        .q2(d1),
+        .q3(d2),
+        .q4(d3),
         .q(d)
     );
 
 endmodule
-
 
 
 module main;
@@ -623,12 +660,12 @@ module main;
     reg [3:0] data = 4'b000;
 
 
-    wire [3:0] d0 = 4'b0000;
-    wire [3:0] d1 = 4'b0000;
-    wire [3:0] d2 = 4'b0000;
-    wire [3:0] d3 = 4'b0000;
-    wire [3:0] d4 = 4'b0000;
-    wire [3:0] d = 4'b0000;
+    wire [3:0] d0;
+    wire [3:0] d1;
+    wire [3:0] d2;
+    wire [3:0] d3;
+    wire [3:0] d4;
+    wire [3:0] d;
 
     my_stack st (
         .reset(reset),
@@ -646,16 +683,17 @@ module main;
 
     initial begin
         reset = 1;
-        #2; reset = 0;
-
-        #1 cmd = 2'b01;
-        #1 data = 4'b0100;
-        #1 sync = 1'b1;
-        #2 sync = 2'b0;
-
+        #100; reset = 0;
+        #100; cmd = 2'b01;
+        #100; data = 4'b0001;
+        #100; sync = 1'b1;
+        #100; sync = 2'b0;
     end
 
-    always @(*) #1 $display("%0t \t %b \t %b \t %d \t %d \t %d \t %d \t %d \t %d", $time - 1, reset, sync, d0, d1, d2, d3, d4, d);
-
+    initial begin
+        // $display("time\t reset \t sync \t cmd \t d0 \t d1 \t d2 \t d3 \t d4 \t d");
+    end
+    
+    always @(*) #1 $display("main t %0t \t r %b \t s %b \t c %d \t d0 %d \t d1 %d \t d2 %d \t d3 %d \t d4 %d \t d %d", $time, reset, sync, cmd, d0, d1, d2, d3, d4, d);
 
 endmodule
