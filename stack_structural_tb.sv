@@ -38,7 +38,7 @@ module stack_structural_tb;
             #2; COMMAND = `PUSH; #0.01 I_DATA = i+1;
         end
         #2 COMMAND = `NOP;
-        #2 I_DATA = 4'bzzzz;
+        #2 I_DATA = 4'b?;
         for (i = 0; i < k; i+=1) begin
             #2; COMMAND = `GET; INDEX = i;
         end

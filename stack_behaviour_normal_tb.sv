@@ -1,11 +1,11 @@
-`include "stack_structural.sv"
+`include "stack_behaviour.sv"
 
 `define NOP 2'b00
 `define PUSH 2'b01 
 `define POP 2'b10
 `define GET 2'b11
 
-module stack_structural_tb;
+module stack_behaviour_tb;
     reg[3:0] I_DATA; wire[3:0] O_DATA;
     reg RESET, CLK;
     reg[1:0] COMMAND; 
@@ -13,7 +13,7 @@ module stack_structural_tb;
     integer i, k, fd, TIMES; string OUTCSV;
 
     assign O_DATA = I_DATA;
-    stack_structural_normal _stack(.IO_DATA(O_DATA), .RESET(RESET), .CLK(CLK), .COMMAND(COMMAND), .INDEX(INDEX));
+    stack_behaviour_normal _stack(.IO_DATA(O_DATA), .RESET(RESET), .CLK(CLK), .COMMAND(COMMAND), .INDEX(INDEX));
 
     initial begin
         if (!$value$plusargs("TIMES=%d", TIMES))
@@ -31,14 +31,14 @@ module stack_structural_tb;
     
     always #1 CLK = ~CLK;
 
-    initial begin 
+    initial begin      
         CLK = 0; COMMAND = `NOP; RESET = 1; INDEX = 0; 
         #2 RESET = 0;
         for (i = 0; i < TIMES; i+=1) begin
             #2; COMMAND = `PUSH; #0.01 I_DATA = i+1;
         end
         #2 COMMAND = `NOP;
-        #2 I_DATA = 4'bzzzz;
+        #2 I_DATA = 4'b?;
         for (i = 0; i < k; i+=1) begin
             #2; COMMAND = `GET; INDEX = i;
         end
