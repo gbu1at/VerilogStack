@@ -13,16 +13,23 @@ module stack_behaviour_normal (
     assign IO_DATA = (COMMAND[1] == 0 || CLK == 1'b0) ? 'z : o_data;
 
     initial begin
-        for (int i = 0; i < 5; ++i) 
-            stack[i] = 0;
+        stack[0] = 0;
+        stack[1] = 0;
+        stack[2] = 0;
+        stack[3] = 0;
+        stack[4] = 0;
         curr_idx = 4'b0000;
         o_data = 4'b0000;
     end
     reg [2:0] i;
+    reg [3:0] shift_indx;
     always @(posedge CLK, RESET) begin
         if (RESET == 1) begin
-            for (int i = 0; i < 5; ++i) 
-                stack[i] = 0;
+            stack[0] = 0;
+            stack[1] = 0;
+            stack[2] = 0;
+            stack[3] = 0;
+            stack[4] = 0;
             curr_idx = 4'b0000; 
             o_data = 4'b0000;
         end
@@ -32,19 +39,27 @@ module stack_behaviour_normal (
             end
             if (COMMAND == 2'b01) begin
                 curr_idx += 1;
-                curr_idx %= 5;
+                if (curr_idx == 4'b0101)
+                    curr_idx = 0;
                 stack[curr_idx] = IO_DATA;
             end
             if (COMMAND == 2'b10) begin
                 o_data = stack[curr_idx];
-                curr_idx += 4;
-                curr_idx %= 5;
+                if (curr_idx == 0) curr_idx = 4'b0101;
+                curr_idx -= 1;
             end
             if (COMMAND == 2'b11) begin
                 i = INDEX;
-                i %= 5;
+                if (i == 3'b111) i = 3'b010;
+                if (i == 3'b110) i = 3'b001;
                 i = 5 - i;
-                o_data = stack[(curr_idx + i) % 5];
+                shift_indx = curr_idx + i;
+                if (shift_indx == 4'b1001) shift_indx = 4'b0100;
+                if (shift_indx == 4'b1000) shift_indx = 4'b0011;
+                if (shift_indx == 4'b0111) shift_indx = 4'b0010;
+                if (shift_indx == 4'b0110) shift_indx = 4'b0001;
+                if (shift_indx == 4'b0101) shift_indx = 4'b0000;
+                o_data = stack[shift_indx];
             end
         end
     end
